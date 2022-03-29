@@ -1,7 +1,10 @@
+import time
+
+from joblib import Parallel, delayed
 import numpy as np
 import matplotlib.pyplot as plt
 
-T = 1
+T = 10
 n = 10000
 sigma = 1
 
@@ -52,15 +55,47 @@ def simple_example():
     brownian = brownian_simulation.brownians
     drawdown = brownian_simulation.get_drawdown()
     print(drawdown)
-    x = np.linspace(start=0, stop=1, num=brownian_simulation.n + 1)
+    x = np.linspace(start=0, stop=T, num=brownian_simulation.n + 1)
     plt.plot(x, brownian[:, 0])
     plt.show()
 
 
+def worker(sharpe_ratio):
+    simulations = 1000
+    nth_percentile = int(0.95 * simulations)
+
+    # print(f"Simulating sharpe ratio: {sharpe_ratio}")
+    brownian_simulation = BrownianSimulation(stop=T, n=n, drift=sharpe_ratio, sigma=1,
+                                             simulation_count=simulations)
+    drawdown = brownian_simulation.get_drawdown()
+    drawdown.dd_length.sort()
+    drawdown.dd_depth.sort()
+    nth_percentile_depth = drawdown.dd_depth[nth_percentile]  # 5th percentile
+    nth_percentile_length = drawdown.dd_length[nth_percentile]  # 5th percentile
+    return nth_percentile_length, nth_percentile_depth
+
+
+def multiple_drawdowns():
+    sharpe_ratios = np.linspace(start=0, stop=10, num=101)
+    lengths = []
+    depths = []
+    start = time.time()
+    results = Parallel(n_jobs=4)(delayed(worker)(sharpe_ratio) for sharpe_ratio in sharpe_ratios)
+    print(results)
+    for res in results:
+        lengths.append(res[0])
+        depths.append(res[1])
+    stop = time.time()
+    print(f"It took: {stop - start} seconds")
+    plt.plot(sharpe_ratios, lengths)
+    plt.plot(sharpe_ratios, depths)
+    plt.show()
+
+
 def main():
-    simple_example()
-    # sharpe_ratios = np.linspace(start=0, stop=10, num=1000)
-    # for sharpe_ratio in sharpe_ratios:
+    # simple_example()
+
+    multiple_drawdowns()
 
 
 if __name__ == "__main__":
