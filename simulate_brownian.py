@@ -35,9 +35,8 @@ class BrownianSimulation:
         self.simulation_count = simulation_count
         dt = stop / n
         drift_array = np.cumsum(np.ones((n, simulation_count)) * dt * drift, axis=0)
-        normal = np.random.normal(0, scale=dt * (sigma ** 2), size=(n, simulation_count))
+        normal = np.random.normal(0, scale=np.sqrt(dt) * (sigma ** 2), size=(n, simulation_count))
         self.brownians = np.insert(drift_array + np.cumsum(normal, axis=0), 0, 0, axis=0)
-        a = 5
 
     def get_drawdown(self):
         argmax = np.argmax(self.brownians, axis=0)
@@ -49,7 +48,7 @@ class BrownianSimulation:
 
 
 def simple_example():
-    brownian_simulation = BrownianSimulation(stop=T, n=n, drift=0.01, sigma=sigma)
+    brownian_simulation = BrownianSimulation(stop=T, n=n, drift=1, sigma=sigma)
     brownian = brownian_simulation.brownians
     drawdown = brownian_simulation.get_drawdown()
     print(drawdown)
