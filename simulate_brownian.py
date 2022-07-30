@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 T = 10
-n = 10000
+n = 1000
 sigma = 1
 
 
@@ -19,6 +19,11 @@ class Drawdown:
         return f"The Pnl_max is: {self.pnl_max}\n" \
                f"The drawdown length is: {self.dd_length}\n" \
                f"The drawdown depth is: {self.dd_depth}."
+
+    def join(self, other: 'Drawdown'):
+        self.pnl_max = np.concatenate((self.pnl_max, other.pnl_max))
+        self.dd_length = np.concatenate((self.dd_length, other.dd_length))
+        self.dd_depth = np.concatenate((self.dd_depth, other.dd_depth))
 
 
 class BrownianSimulation:
@@ -61,6 +66,7 @@ def simple_example():
 
 
 def worker(sharpe_ratio):
+    print("working on sharpe ratio: ", sharpe_ratio)
     simulations = 1000
     nth_percentile = int(0.95 * simulations)
 
@@ -76,19 +82,23 @@ def worker(sharpe_ratio):
 
 
 def multiple_drawdowns():
-    sharpe_ratios = np.linspace(start=0, stop=10, num=101)
+    N = 10001
+    sharpe_ratios = np.linspace(start=0, stop=10, num=N)
     lengths = []
     depths = []
     start = time.time()
-    results = Parallel(n_jobs=4)(delayed(worker)(sharpe_ratio) for sharpe_ratio in sharpe_ratios)
+    results = Parallel(n_jobs=16)(delayed(worker)(sharpe_ratio) for sharpe_ratio in sharpe_ratios)
     print(results)
     for res in results:
         lengths.append(res[0])
         depths.append(res[1])
     stop = time.time()
     print(f"It took: {stop - start} seconds")
-    plt.plot(sharpe_ratios, lengths)
-    plt.plot(sharpe_ratios, depths)
+    fig, ax = plt.subplots()
+    ax.text(6, 4, 'N= {}'.format(N))
+    plt.plot(sharpe_ratios, lengths, label='lengths')
+    plt.plot(sharpe_ratios, depths, label='depths')
+    plt.legend(loc="upper left")
     plt.show()
 
 
